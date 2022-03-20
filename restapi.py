@@ -8,6 +8,9 @@ from PIL import Image
 import torch
 from flask import Flask, request
 
+import requests
+import json
+
 app = Flask(__name__)
 
 DETECTION_URL = "/v1/object-detection/yolov5s"
@@ -28,6 +31,26 @@ def predict():
         data = results.pandas().xyxy[0].to_json(orient="records")
         return data
 
+DETECTION_GET_URL = "/detect"
+
+
+@app.route(DETECTION_GET_URL, methods=["GET"])
+def predict_get():
+    if not request.method == "GET":
+        return
+
+    if request.args.get('url'):
+        url = request.args.get('url')
+
+        img = Image.open(io.BytesIO(requests.get(url).content))
+
+        results = model(img, size=640)
+        data = results.pandas().xyxy[0].to_json(orient="records")
+
+        return {
+            "data": json.loads(data)
+        }
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Flask api exposing yolov5 model")
@@ -36,6 +59,6 @@ if __name__ == "__main__":
 
     model = torch.hub.load(
         "ultralytics/yolov5", "yolov5s", pretrained=True, force_reload=True
-    ).autoshape()  # force_reload = recache latest code
+    )# .autoshape()  # force_reload = recache latest code
     model.eval()
     app.run(host="0.0.0.0", port=args.port)  # debug=True causes Restarting with stat

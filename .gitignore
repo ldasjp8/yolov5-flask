@@ -4,3 +4,4 @@ venv/
 #*.jpg
 static/tmp.jpg
 *.pyc
+.DS_Store
